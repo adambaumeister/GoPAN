@@ -263,3 +263,21 @@ func Commit(fqdn string, apikey string) {
 
 	PollJob(fqdn, apikey, jobid)
 }
+
+/*
+Retrieve all the objects at a given XPath
+*/
+func GetXpath(fqdn, apikey string, xpath string) []byte {
+	req, err := url.Parse("https://" + fqdn + "/api/?")
+	Logerror(err, true)
+
+	q := url.Values{}
+	q.Add("type", "config")
+	q.Add("key", apikey)
+	q.Add("action", "get")
+	q.Add("xpath", xpath)
+	req.RawQuery = q.Encode()
+	//Sending the query to the firewall
+	resp, err := HttpValidate(req.String(), false)
+	return resp
+}
