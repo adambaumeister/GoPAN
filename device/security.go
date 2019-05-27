@@ -26,8 +26,6 @@ type RuleBase struct {
 }
 
 func GetSecurityRules(fqdn string, apikey string, path string) []Rule {
-
-	//path := "/config/devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vsys1']/rulebase/security"
 	resp := pan.GetXpath(fqdn, apikey, path)
 
 	rules := []Rule{}

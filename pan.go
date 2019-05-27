@@ -43,12 +43,6 @@ func main() {
 		},
 	}
 
-	cmdLoad.Flags().StringVarP(&firewallIP, "ip-address", "i", "", "firewall IP address or FQDN")
-	cmdLoad.MarkFlagRequired("ip-address")
-	cmdLoad.Flags().StringVarP(&user, "user", "u", "", "firewall username")
-	cmdLoad.MarkFlagRequired("user")
-	cmdLoad.Flags().StringVarP(&pass, "password", "p", "", "firewall password")
-	cmdLoad.MarkFlagRequired("password")
 	cmdLoad.Flags().StringVarP(&file, "filename", "f", "", "Path to file to load")
 	cmdLoad.MarkFlagRequired("filename")
 	cmdLoad.Flags().BoolVarP(&commit, "commit", "c", false, "Commit config after load.")
@@ -80,8 +74,6 @@ func main() {
 		},
 	}
 	//Seting requiered flags
-	cmdCPS.Flags().StringVarP(&firewallIP, "ip-address", "i", "", "firewall IP address or FQDN")
-	cmdCPS.MarkFlagRequired("ip-address")
 	cmdCPS.Flags().StringVarP(&community, "community", "c", "", "SNMPv2 community or SNMPv3 user")
 	cmdCPS.MarkFlagRequired("community")
 	cmdCPS.Flags().IntVarP(&polltime, "polltime", "s", 10, "SNMP interval in polltime to collect LPS")
@@ -110,8 +102,6 @@ func main() {
 		},
 	}
 	//missing timeout, filename or command
-	cmdSSH.Flags().StringVarP(&firewallIP, "ip-address", "i", "", "firewall IP address or FQDN")
-	cmdSSH.MarkFlagRequired("ip-address")
 	cmdSSH.Flags().StringVarP(&user, "user", "u", "", "firewall username")
 	cmdSSH.MarkFlagRequired("user")
 	cmdSSH.Flags().StringVarP(&pass, "password", "p", "", "firewall password")
@@ -135,7 +125,6 @@ func main() {
 		},
 	}
 	//Adding fqdn, username and password as persistend flags for all api sub-commands
-	cmdApi.PersistentFlags().StringVarP(&firewallIP, "ip-address", "i", "", "firewall IP address or FQDN")
 	cmdApi.PersistentFlags().StringVarP(&user, "user", "u", "", "firewall username")
 	cmdApi.PersistentFlags().StringVarP(&pass, "password", "p", "", "firewall password")
 
@@ -186,11 +175,42 @@ func main() {
 		},
 	}
 
+	var config = &cobra.Command{
+		Use:   "config",
+		Short: "manipulate the PAN configuration",
+		Long:  "Subcommand that provides routes for manipulating and viewing configuration",
+		Args:  cobra.MinimumNArgs(0),
+	}
+
+	var configShow = &cobra.Command{
+		Use:   "search",
+		Short: "Search the PAN configuraton",
+		Long:  "Search for a string",
+		Args:  cobra.MinimumNArgs(0),
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf(args[0])
+		},
+	}
+
 	//Setting command and subcommand structure
 	var rootCmd = &cobra.Command{Use: "pan"}
-	rootCmd.AddCommand(cmdLoad)
+
+	rootCmd.PersistentFlags().StringVarP(&firewallIP, "ip-address", "i", "", "firewall IP address or FQDN")
+	rootCmd.MarkPersistentFlagRequired("ip-address")
+
+	// gopan config [whatever] block
+	config.PersistentFlags().StringVarP(&user, "user", "u", "", "firewall username")
+	config.PersistentFlags().StringVarP(&pass, "password", "p", "", "firewall password")
+	config.MarkPersistentFlagRequired("user")
+	config.MarkPersistentFlagRequired("password")
+	config.AddCommand(configShow)
+	config.AddCommand(cmdLoad)
+
+	// gopan [whatever] block
+	rootCmd.AddCommand(config)
 	rootCmd.AddCommand(cmdScript)
 	rootCmd.AddCommand(cmdApi)
+
 	//Run sub-commands
 	cmdScript.AddCommand(cmdCPS)
 	cmdScript.AddCommand(cmdSSH)
@@ -200,4 +220,8 @@ func main() {
 	cmdApi.AddCommand(cmdCut)
 	cmdApi.AddCommand(cmdThreat)
 	rootCmd.Execute()
+}
+
+func Setup() {
+
 }
