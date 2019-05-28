@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/zepryspet/GoPAN/api/cutover"
@@ -10,6 +12,8 @@ import (
 	"github.com/zepryspet/GoPAN/run/cps"
 	"github.com/zepryspet/GoPAN/run/ssh"
 	"github.com/zepryspet/GoPAN/utils"
+	"log"
+	"os"
 	"strings"
 	"time"
 )
@@ -30,6 +34,16 @@ func main() {
 	var flag2 bool
 	var file string
 	var commit bool
+
+	var setup = &cobra.Command{
+		Use:   "setup",
+		Short: "Setup an environment file.",
+		Long:  "Configures an environment file within the home directory as [ipaddress].json.",
+		Args:  cobra.MinimumNArgs(0),
+		Run: func(cmd *cobra.Command, args []string) {
+			Setup()
+		},
+	}
 
 	// Load an XML configuration file as a "named" config file.
 	// THe filename (sans path) is what is used as the destination name.
@@ -196,7 +210,7 @@ func main() {
 	var rootCmd = &cobra.Command{Use: "pan"}
 
 	rootCmd.PersistentFlags().StringVarP(&firewallIP, "ip-address", "i", "", "firewall IP address or FQDN")
-	rootCmd.MarkPersistentFlagRequired("ip-address")
+	//rootCmd.MarkPersistentFlagRequired("ip-address")
 
 	// gopan config [whatever] block
 	config.PersistentFlags().StringVarP(&user, "user", "u", "", "firewall username")
@@ -210,6 +224,7 @@ func main() {
 	rootCmd.AddCommand(config)
 	rootCmd.AddCommand(cmdScript)
 	rootCmd.AddCommand(cmdApi)
+	rootCmd.AddCommand(setup)
 
 	//Run sub-commands
 	cmdScript.AddCommand(cmdCPS)
@@ -224,4 +239,21 @@ func main() {
 
 func Setup() {
 
+	environment := make(map[string]string)
+
+	variables := []string{"User", "IP"}
+
+	scanner := bufio.NewScanner(os.Stdin)
+	for _, prompt := range variables {
+		fmt.Printf("%v: ", prompt)
+		scanner.Scan()
+		environment[prompt] = scanner.Text()
+	}
+
+	jout, err := json.Marshal(environment)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("%v\n", string(jout))
 }
