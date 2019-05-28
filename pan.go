@@ -1,23 +1,17 @@
 package main
 
 import (
-	"bufio"
-	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/zepryspet/GoPAN/api/cutover"
 	"github.com/zepryspet/GoPAN/api/loadconfig"
 	"github.com/zepryspet/GoPAN/api/threat"
 	"github.com/zepryspet/GoPAN/api/urlcat"
+	"github.com/zepryspet/GoPAN/device"
 	"github.com/zepryspet/GoPAN/run/cps"
 	"github.com/zepryspet/GoPAN/run/ssh"
 	"github.com/zepryspet/GoPAN/utils"
-	"golang.org/x/crypto/ssh/terminal"
-	"io/ioutil"
-	"log"
-	"os"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -39,16 +33,6 @@ func main() {
 	var flag2 bool
 	var file string
 	var commit bool
-
-	var setup = &cobra.Command{
-		Use:   "setup",
-		Short: "Setup an environment file.",
-		Long:  "Configures an environment file within the home directory as [ipaddress].json.",
-		Args:  cobra.MinimumNArgs(0),
-		Run: func(cmd *cobra.Command, args []string) {
-			Setup(firewallIP)
-		},
-	}
 
 	// Load an XML configuration file as a "named" config file.
 	// THe filename (sans path) is what is used as the destination name.
@@ -204,10 +188,14 @@ func main() {
 	var configShow = &cobra.Command{
 		Use:   "search",
 		Short: "Search the PAN configuraton",
-		Long:  "Search for a string",
-		Args:  cobra.MinimumNArgs(0),
+		Long:  "Perform a regex search on all the given object names in the device for whatever context.",
+		Args:  cobra.MinimumNArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf(args[0])
+			fw := device.Connect(
+				firewallIP,
+				user,
+				pass)
+			fw.Search(args[0], args[1])
 		},
 	}
 
@@ -229,7 +217,6 @@ func main() {
 	rootCmd.AddCommand(config)
 	rootCmd.AddCommand(cmdScript)
 	rootCmd.AddCommand(cmdApi)
-	rootCmd.AddCommand(setup)
 
 	//Run sub-commands
 	cmdScript.AddCommand(cmdCPS)
@@ -240,38 +227,4 @@ func main() {
 	cmdApi.AddCommand(cmdCut)
 	cmdApi.AddCommand(cmdThreat)
 	rootCmd.Execute()
-}
-
-func Setup(IP string) {
-
-	environment := make(map[string]string)
-
-	variables := []string{"User"}
-	scanner := bufio.NewScanner(os.Stdin)
-	for _, prompt := range variables {
-		fmt.Printf("%v: ", prompt)
-		scanner.Scan()
-		environment[prompt] = scanner.Text()
-	}
-	environment["IP"] = IP
-	fmt.Print("Password (not stored): ")
-	passwdBytes, err := terminal.ReadPassword(int(syscall.Stdin))
-	passwd := string(passwdBytes)
-
-	environment["apikey"] = pan.Keygen(IP, environment["User"], passwd)
-
-	jout, err := json.Marshal(environment)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	//fmt.Printf("%v\n", string(jout))
-	err = ioutil.WriteFile(CONFIG_FILENAME, jout, 0600)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func GetConfig(c string) {
-
 }

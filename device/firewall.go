@@ -1,7 +1,9 @@
 package device
 
 import (
+	"fmt"
 	"github.com/zepryspet/GoPAN/utils"
+	"regexp"
 )
 
 type Firewall struct {
@@ -47,4 +49,21 @@ func (fw *Firewall) GetRules() *RuleBase {
 
 	fw.Rules = rb.Device
 	return &rb
+}
+
+func (fw *Firewall) SearchRules(query string) {
+	fw.GetRules()
+	for _, r := range fw.Rules {
+		m, _ := regexp.Match(query, []byte(r.Name))
+		if m {
+			fmt.Printf(r.Name)
+		}
+	}
+}
+
+func (fw *Firewall) Search(context string, query string) {
+	switch context {
+	case "rules":
+		fw.SearchRules(query)
+	}
 }

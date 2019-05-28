@@ -6,6 +6,7 @@ import (
 )
 
 type Rule struct {
+	Name        string
 	To          []*etree.Element
 	From        []*etree.Element
 	Source      []*etree.Element
@@ -37,6 +38,7 @@ func GetSecurityRules(fqdn string, apikey string, path string) []Rule {
 	for _, r := range rulesRoot.SelectElements("entry") {
 		rule := Rule{}
 
+		rule.Name = r.SelectAttr("name").Value
 		rule.To = r.FindElements("./to/member")
 		rule.From = r.FindElements("./from/member")
 		rule.Source = r.FindElements("./source/member")
