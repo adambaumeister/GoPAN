@@ -12,11 +12,16 @@ import (
 	"github.com/zepryspet/GoPAN/run/cps"
 	"github.com/zepryspet/GoPAN/run/ssh"
 	"github.com/zepryspet/GoPAN/utils"
+	"golang.org/x/crypto/ssh/terminal"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
+	"syscall"
 	"time"
 )
+
+const CONFIG_FILENAME = "gopan.json"
 
 func main() {
 	//Variables used for flags
@@ -41,7 +46,7 @@ func main() {
 		Long:  "Configures an environment file within the home directory as [ipaddress].json.",
 		Args:  cobra.MinimumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			Setup()
+			Setup(firewallIP)
 		},
 	}
 
@@ -210,7 +215,7 @@ func main() {
 	var rootCmd = &cobra.Command{Use: "pan"}
 
 	rootCmd.PersistentFlags().StringVarP(&firewallIP, "ip-address", "i", "", "firewall IP address or FQDN")
-	//rootCmd.MarkPersistentFlagRequired("ip-address")
+	rootCmd.MarkPersistentFlagRequired("ip-address")
 
 	// gopan config [whatever] block
 	config.PersistentFlags().StringVarP(&user, "user", "u", "", "firewall username")
@@ -237,23 +242,36 @@ func main() {
 	rootCmd.Execute()
 }
 
-func Setup() {
+func Setup(IP string) {
 
 	environment := make(map[string]string)
 
-	variables := []string{"User", "IP"}
-
+	variables := []string{"User"}
 	scanner := bufio.NewScanner(os.Stdin)
 	for _, prompt := range variables {
 		fmt.Printf("%v: ", prompt)
 		scanner.Scan()
 		environment[prompt] = scanner.Text()
 	}
+	environment["IP"] = IP
+	fmt.Print("Password (not stored): ")
+	passwdBytes, err := terminal.ReadPassword(int(syscall.Stdin))
+	passwd := string(passwdBytes)
+
+	environment["apikey"] = pan.Keygen(IP, environment["User"], passwd)
 
 	jout, err := json.Marshal(environment)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("%v\n", string(jout))
+	//fmt.Printf("%v\n", string(jout))
+	err = ioutil.WriteFile(CONFIG_FILENAME, jout, 0600)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func GetConfig(c string) {
+
 }
