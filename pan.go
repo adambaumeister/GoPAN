@@ -11,6 +11,7 @@ import (
 	"github.com/zepryspet/GoPAN/run/cps"
 	"github.com/zepryspet/GoPAN/run/ssh"
 	"github.com/zepryspet/GoPAN/utils"
+	"os"
 	"strings"
 	"time"
 )
@@ -195,22 +196,37 @@ func main() {
 				firewallIP,
 				user,
 				pass)
-			fw.Search(args[0], args[1])
+			fw.SearchAndPrint(args[0], args[1])
+		},
+	}
+
+	var configTest = &cobra.Command{
+		Use:   "test",
+		Short: "Test the PAN configuraton",
+		Long:  "Run various avaialble tests against the PAN device",
+		Args:  cobra.MinimumNArgs(2),
+		Run: func(cmd *cobra.Command, args []string) {
+			fw := device.Connect(
+				firewallIP,
+				user,
+				pass)
+			fw.Test(args)
 		},
 	}
 
 	//Setting command and subcommand structure
 	var rootCmd = &cobra.Command{Use: "pan"}
 
-	rootCmd.PersistentFlags().StringVarP(&firewallIP, "ip-address", "i", "", "firewall IP address or FQDN")
-	rootCmd.MarkPersistentFlagRequired("ip-address")
+	rootCmd.PersistentFlags().StringVarP(&firewallIP, "ip-address", "i", os.Getenv("GOPAN_IP"), "firewall IP address or FQDN")
+	//rootCmd.MarkPersistentFlagRequired("ip-address")
 
 	// gopan config [whatever] block
-	config.PersistentFlags().StringVarP(&user, "user", "u", "", "firewall username")
-	config.PersistentFlags().StringVarP(&pass, "password", "p", "", "firewall password")
-	config.MarkPersistentFlagRequired("user")
-	config.MarkPersistentFlagRequired("password")
+	config.PersistentFlags().StringVarP(&user, "user", "u", os.Getenv("GOPAN_USER"), "firewall username")
+	config.PersistentFlags().StringVarP(&pass, "password", "p", os.Getenv("GOPAN_PASS"), "firewall password")
+	//config.MarkPersistentFlagRequired("user")
+	//config.MarkPersistentFlagRequired("password")
 	config.AddCommand(configShow)
+	config.AddCommand(configTest)
 	config.AddCommand(cmdLoad)
 
 	// gopan [whatever] block

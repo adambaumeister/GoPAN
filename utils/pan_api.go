@@ -209,6 +209,36 @@ func CmdGen(cmd string) string {
 	return xml
 }
 
+type SecurityPolicyTestXmlStruct struct {
+	Command             *string
+	SecurityPolicyMatch string `xml:"security-policy-match"`
+	From                *string
+	To                  string
+	Source              string
+	Destination         string
+	Protocol            int
+	DestinationPort     int `xml:"destination_port"`
+}
+
+/*
+Command generator containing tuple of k/v
+ex. source 1.1.1.1 destination 2.2.2.2
+<source>1.1.1.1</source>
+<destination>2.2.2.2</destination>
+*/
+func KvCmdGenSlice(cmd []string) string {
+	i := 0
+	xmlResult := []string{}
+	for i < len(cmd) {
+		field := cmd[i]
+		value := cmd[i+1]
+		i = i + 2
+		xmlResult = append(xmlResult, fmt.Sprintf("<%v>%v</%v>", field, value, field))
+	}
+
+	return strings.Join(xmlResult, "")
+}
+
 /*
 Poll the status of a job ID and return when it is finished.
 */
@@ -238,6 +268,20 @@ func PollJob(fqdn string, apikey string, jobid string) {
 		fmt.Printf("Commit status: %v (%v)\n", status, progress)
 		time.Sleep(2 * time.Second)
 	}
+}
+
+func RunOp(fqdn string, apikey string, cmd string) []byte {
+	req, err := url.Parse("https://" + fqdn + "/api/?")
+	q := url.Values{}
+	q.Add("type", "op")
+	q.Add("key", apikey)
+	q.Add("cmd", cmd)
+	req.RawQuery = q.Encode()
+	//Sending the query to the firewall
+	resp, err := HttpValidate(req.String(), false)
+	Logerror(err, true)
+
+	return resp
 }
 
 /*

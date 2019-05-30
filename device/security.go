@@ -1,8 +1,10 @@
 package device
 
 import (
+	"fmt"
 	"github.com/beevik/etree"
 	"github.com/zepryspet/GoPAN/utils"
+	"strings"
 )
 
 type Rule struct {
@@ -19,11 +21,27 @@ type Rule struct {
 	Action      string
 }
 
+func (r *Rule) Print() {
+	fmt.Printf("%v	%v	%v:%v	%v:%v", r.Name, r.Action,
+		strings.Join(MembersToText(r.From), ","),
+		strings.Join(MembersToText(r.Source), ","),
+		strings.Join(MembersToText(r.To), ","),
+		strings.Join(MembersToText(r.Destinaton), ","))
+}
+
 type RuleBase struct {
 	Pre  []Rule
 	Post []Rule
 
 	Device []Rule
+}
+
+func MembersToText(elements []*etree.Element) []string {
+	var result []string
+	for _, element := range elements {
+		result = append(result, element.Text())
+	}
+	return result
 }
 
 func GetSecurityRules(fqdn string, apikey string, path string) []Rule {
@@ -42,7 +60,10 @@ func GetSecurityRules(fqdn string, apikey string, path string) []Rule {
 		rule.To = r.FindElements("./to/member")
 		rule.From = r.FindElements("./from/member")
 		rule.Source = r.FindElements("./source/member")
+		rule.Service = r.FindElements("./service/member")
+		rule.Application = r.FindElements("./application/member")
 		rule.Destinaton = r.FindElements("./destination/member")
+		rule.Action = r.FindElement("./action").Text()
 		rule.SourceUser = r.FindElements("./source-user/member")
 
 		rules = append(rules, rule)

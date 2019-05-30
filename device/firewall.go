@@ -1,6 +1,7 @@
 package device
 
 import (
+	"encoding/xml"
 	"fmt"
 	"github.com/zepryspet/GoPAN/utils"
 	"regexp"
@@ -51,19 +52,52 @@ func (fw *Firewall) GetRules() *RuleBase {
 	return &rb
 }
 
-func (fw *Firewall) SearchRules(query string) {
+func (fw *Firewall) SearchRules(query string) []Rule {
 	fw.GetRules()
+	result := []Rule{}
 	for _, r := range fw.Rules {
 		m, _ := regexp.Match(query, []byte(r.Name))
 		if m {
-			fmt.Printf(r.Name)
+			result = append(result, r)
+		}
+	}
+	return result
+}
+
+func (fw *Firewall) SearchAndPrint(context string, query string) {
+
+	switch context {
+	case "rules":
+		result := fw.SearchRules(query)
+		for _, r := range result {
+			r.Print()
 		}
 	}
 }
 
-func (fw *Firewall) Search(context string, query string) {
-	switch context {
-	case "rules":
-		fw.SearchRules(query)
-	}
+func (fw *Firewall) Test(query []string) {
+	testParams := pan.KvCmdGenSlice(query[1:])
+	test := fmt.Sprintf("<test><%v>%v</%v></test>", query[0], testParams, query[0])
+	resp := pan.RunOp(fw.Fqdn, fw.Apikey, test)
+
+	v := Response{}
+	xml.Unmarshal(resp, &v)
+	//fmt.Print(string(resp))
+	fmt.Printf("From: %v\n", v.Result.Rules.Entry[0].Name)
+}
+
+type Response struct {
+	Cmd    string     `xml:"cmd,attr"`
+	Status string     `xml:"status,attr"`
+	Result TestResult `xml:"result"`
+}
+type TestResult struct {
+	Rules TestResultRules `xml:"rules"`
+}
+
+type TestResultRules struct {
+	Entry []TestResultEntry `xml:"entry"`
+}
+type TestResultEntry struct {
+	Name string `xml:"name,attr"`
 }

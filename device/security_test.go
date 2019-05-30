@@ -2,6 +2,7 @@ package device
 
 import (
 	"fmt"
+	"github.com/zepryspet/GoPAN/utils"
 	"strings"
 	"testing"
 )
@@ -22,4 +23,8 @@ func TestGetSecurityRules(t *testing.T) {
 		sources := GetElementsText(rule.Source)
 		fmt.Printf("%v\n", strings.Join(sources, ", "))
 	}
+}
+
+func TestCmdGenSlice(t *testing.T) {
+	fmt.Print(pan.KvCmdGenSlice([]string{"f", "v"}))
 }
